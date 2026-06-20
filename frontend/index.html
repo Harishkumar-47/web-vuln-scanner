@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VulnScan — Web Vulnerability Scanner</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-dark:    #0d1117;
+      --bg-card:    #161b22;
+      --bg-input:   #21262d;
+      --border:     #30363d;
+      --accent:     #00d4aa;
+      --accent-dim: #00d4aa22;
+      --red:        #f85149;
+      --orange:     #d29922;
+      --text:       #e6edf3;
+      --text-muted: #7d8590;
+      --font-mono:  'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .navbar-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 20px; font-weight: 700; color: var(--accent);
+      text-decoration: none; font-family: var(--font-mono);
+    }
+    .navbar-brand i { font-size: 22px; }
+    .nav-links { display: flex; gap: 24px; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: 14px; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 72px 16px 40px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-dim); border: 1px solid var(--accent);
+      color: var(--accent); font-size: 12px; font-weight: 600;
+      padding: 4px 14px; border-radius: 100px;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 17px; color: var(--text-muted);
+      max-width: 540px; margin: 0 auto 40px; line-height: 1.6;
+    }
+
+    /* ── SCAN CARD ── */
+    .scan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .scan-card label {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-muted); letter-spacing: 0.05em;
+      text-transform: uppercase; margin-bottom: 8px; display: block;
+    }
+    .url-input-wrap {
+      display: flex; gap: 10px; margin-bottom: 20px;
+    }
+    .url-input-wrap input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .url-input-wrap input:focus { border-color: var(--accent); }
+    .url-input-wrap input::placeholder { color: var(--text-muted); }
+
+    .btn-scan {
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-scan:hover { opacity: 0.85; }
+    .btn-scan:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── SCAN TYPE CHECKBOXES ── */
+    .scan-types {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .scan-type-item {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      user-select: none;
+    }
+    .scan-type-item:hover { border-color: var(--accent); }
+    .scan-type-item input[type="checkbox"] { display: none; }
+    .scan-type-item.checked { border-color: var(--accent); background: var(--accent-dim); }
+    .scan-icon { font-size: 18px; width: 28px; text-align: center; }
+    .scan-type-info strong { font-size: 14px; display: block; }
+    .scan-type-info span { font-size: 12px; color: var(--text-muted); }
+    .check-indicator {
+      margin-left: auto;
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--accent);
+      transition: border-color 0.2s;
+    }
+    .scan-type-item.checked .check-indicator {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #0d1117;
+    }
+
+    /* ── PROGRESS ── */
+    .progress-wrap { display: none; margin-top: 24px; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 13px; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .progress-bar-bg {
+      background: var(--bg-input);
+      border-radius: 100px; height: 6px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; background: var(--accent);
+      border-radius: 100px; width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-steps {
+      display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+    }
+    .step-pill {
+      font-size: 11px; padding: 4px 10px;
+      border-radius: 100px; border: 1px solid var(--border);
+      color: var(--text-muted); display: flex; align-items: center; gap: 5px;
+    }
+    .step-pill.running { border-color: var(--orange); color: var(--orange); }
+    .step-pill.done    { border-color: var(--accent); color: var(--accent); }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin: 48px auto; max-width: 680px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+      text-align: center;
+    }
+    .stat-card .num {
+      font-size: 32px; font-weight: 800;
+      color: var(--accent); font-family: var(--font-mono);
+    }
+    .stat-card .lbl { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── ALERT ── */
+    .alert-box {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 16px;
+      border: 1px solid;
+    }
+    .alert-error { background: #f8514922; border-color: var(--red); color: var(--red); }
+    .alert-success { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+      max-width: 680px; margin: 0 auto 48px;
+      background: #d2992211;
+      border: 1px solid #d2992244;
+      border-radius: 8px; padding: 14px 18px;
+      font-size: 13px; color: var(--orange);
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .disclaimer i { margin-top: 2px; flex-shrink: 0; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center; padding: 24px;
+      font-size: 13px; color: var(--text-muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a class="navbar-brand" href="index.html">
+      <i class="fa-solid fa-shield-halved"></i> VulnScan
+    </a>
+    <div class="nav-links">
+      <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
+      <a href="results.html"><i class="fa-solid fa-chart-bar"></i> Results</a>
+      <a href="login.html"><i class="fa-solid fa-user"></i> Login</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge"><i class="fa-solid fa-radar"></i> Security Scanner</div>
+    <h1>Find vulnerabilities<br>before <span>attackers do</span></h1>
+    <p>Enter any website URL to scan for XSS, SQL Injection, missing security headers, and open redirects — instantly.</p>
+
+    <!-- SCAN CARD -->
+    <div class="scan-card">
+
+      <!-- URL INPUT -->
+      <label>Target URL</label>
+      <div class="url-input-wrap">
+        <input type="text" id="targetUrl" placeholder="https://example.com" autocomplete="off"/>
+        <button class="btn-scan" id="scanBtn" onclick="startScan()">
+          <i class="fa-solid fa-magnifying-glass"></i> Scan
+        </button>
+      </div>
+
+      <!-- SCAN TYPES -->
+      <label>Scan modules</label>
+      <div class="scan-types" id="scanTypes">
+
+        <div class="scan-type-item checked" onclick="toggleScan(this)" data-type="xss">
+          <input type="checkbox" checked/>
+          <div class="scan-icon">🎯</div>
+          <div class="scan-type-info">
+            <strong>XSS</strong>
+            <span>Cross-site scripting</span>
+          </div>
+          <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+        </div>
+
+        <div class="scan-type-item checked" onclick="toggleScan(this)" data-type="sqli">
+          <input type="checkbox" checked/>
+          <div class="scan-icon">💉</div>
+          <div class="scan-type-info">
+            <strong>SQL Injection</strong>
+            <span>Database attacks</span>
+          </div>
+          <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+        </div>
+
+        <div class="scan-type-item checked" onclick="toggleScan(this)" data-type="headers">
+          <input type="checkbox" checked/>
+          <div class="scan-icon">🛡️</div>
+          <div class="scan-type-info">
+            <strong>Security Headers</strong>
+            <span>CSP, HSTS, X-Frame</span>
+          </div>
+          <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+        </div>
+
+        <div class="scan-type-item checked" onclick="toggleScan(this)" data-type="redirects">
+          <input type="checkbox" checked/>
+          <div class="scan-icon">↪️</div>
+          <div class="scan-type-info">
+            <strong>Open Redirects</strong>
+            <span>URL redirect abuse</span>
+          </div>
+          <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+        </div>
+
+      </div>
+
+      <!-- CONSENT CHECKBOX -->
+      <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:20px;">
+        <input type="checkbox" id="consent" style="margin-top:3px; accent-color: var(--accent);"/>
+        <label for="consent" style="text-transform:none; font-size:13px; color:var(--text-muted); letter-spacing:0; cursor:pointer;">
+          I confirm I own or have permission to scan this website. I accept full responsibility for this scan.
+        </label>
+      </div>
+
+      <!-- ALERT BOX -->
+      <div class="alert-box alert-error" id="alertBox"></div>
+
+      <!-- PROGRESS -->
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-label">
+          <span id="progressText">Initializing scan...</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-steps" id="progressSteps"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="num" id="statScans">0</div>
+      <div class="lbl">Scans run this session</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">4</div>
+      <div class="lbl">Vulnerability modules</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">&lt;30s</div>
+      <div class="lbl">Average scan time</div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <span><strong>Legal notice:</strong> Only scan websites you own or have explicit written permission to test. Unauthorized scanning may be illegal under the Computer Fraud and Abuse Act and similar laws. This tool is for educational and authorized security testing only.</span>
+  </div>
+
+  <footer>
+    Built for educational purposes · <a href="https://github.com/Harishkumar-47/web-vuln-scanner" target="_blank">GitHub</a>
+  </footer>
+
+  <script>
+    // ── Toggle scan type selection ──
+    function toggleScan(el) {
+      el.classList.toggle('checked');
+      const cb = el.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+    }
+
+    // ── Show / hide alert ──
+    function showAlert(msg, type = 'error') {
+      const box = document.getElementById('alertBox');
+      box.textContent = msg;
+      box.className = `alert-box alert-${type}`;
+      box.style.display = 'block';
+      setTimeout(() => box.style.display = 'none', 4000);
+    }
+
+    // ── Validate URL ──
+    function isValidUrl(url) {
+      try {
+        const u = new URL(url);
+        return ['http:', 'https:'].includes(u.protocol);
+      } catch { return false; }
+    }
+
+    // ── Progress simulation (replace with real WebSocket later) ──
+    function simulateProgress(modules) {
+      const wrap = document.getElementById('progressWrap');
+      const fill = document.getElementById('progressFill');
+      const pct  = document.getElementById('progressPct');
+      const text = document.getElementById('progressText');
+      const steps = document.getElementById('progressSteps');
+
+      wrap.style.display = 'block';
+      steps.innerHTML = modules.map(m =>
+        `<div class="step-pill" id="step-${m}"><i class="fa-solid fa-circle-notch fa-spin"></i> ${m}</div>`
+      ).join('');
+
+      let progress = 0;
+      const perStep = 100 / modules.length;
+
+      modules.forEach((mod, i) => {
+        setTimeout(() => {
+          // mark previous done
+          if (i > 0) {
+            const prev = document.getElementById(`step-${modules[i-1]}`);
+            prev.className = 'step-pill done';
+            prev.innerHTML = `<i class="fa-solid fa-check"></i> ${modules[i-1]}`;
+          }
+          // mark current running
+          const cur = document.getElementById(`step-${mod}`);
+          cur.className = 'step-pill running';
+          text.textContent = `Running ${mod} scan...`;
+          progress = Math.round(perStep * i);
+          fill.style.width = progress + '%';
+          pct.textContent = progress + '%';
+
+          // last step: finish
+          if (i === modules.length - 1) {
+            setTimeout(() => {
+              cur.className = 'step-pill done';
+              cur.innerHTML = `<i class="fa-solid fa-check"></i> ${mod}`;
+              fill.style.width = '100%';
+              pct.textContent = '100%';
+              text.textContent = 'Scan complete!';
+
+              // update session counter
+              const stat = document.getElementById('statScans');
+              stat.textContent = parseInt(stat.textContent) + 1;
+
+              setTimeout(() => {
+                // redirect to results page with the URL as query param
+                const url = document.getElementById('targetUrl').value;
+                window.location.href = `results.html?url=${encodeURIComponent(url)}`;
+              }, 800);
+            }, 1500);
+          }
+        }, i * 1800);
+      });
+    }
+
+    // ── Main scan trigger ──
+    function startScan() {
+      const url     = document.getElementById('targetUrl').value.trim();
+      const consent = document.getElementById('consent').checked;
+      const btn     = document.getElementById('scanBtn');
+
+      // validations
+      if (!url) { showAlert('Please enter a target URL.'); return; }
+      if (!isValidUrl(url)) { showAlert('Enter a valid URL starting with http:// or https://'); return; }
+      if (!consent) { showAlert('You must confirm you have permission to scan this site.'); return; }
+
+      const checked = [...document.querySelectorAll('.scan-type-item.checked')]
+                        .map(el => el.dataset.type);
+      if (checked.length === 0) { showAlert('Select at least one scan module.'); return; }
+
+      // disable button during scan
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scanning...';
+
+      // ── API call to backend ──
+      // When backend is ready, replace simulateProgress with:
+      //
+      // fetch('http://localhost:8000/api/scan', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ url, modules: checked })
+      // })
+      // .then(r => r.json())
+      // .then(data => {
+      //   console.log('Scan ID:', data.scan_id);
+      //   window.location.href = `results.html?scan_id=${data.scan_id}`;
+      // })
+      // .catch(() => showAlert('Could not connect to backend. Is it running?'));
+
+      simulateProgress(checked);
+    }
+
+    // ── Allow pressing Enter to scan ──
+    document.getElementById('targetUrl').addEventListener('keydown', e => {
+      if (e.key === 'Enter') startScan();
+    });
+  </script>
+
+</body>
+</html>
